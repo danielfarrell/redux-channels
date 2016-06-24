@@ -2,7 +2,7 @@
 
 A provider and connect for getting websocket channels(ie, Socket.io/Phoenix/ActionCable) working with Redux.
 
-This library was heavily inspired by and borrows code from (react-redux)[https://github.com/reactjs/react-redux/] and (react-apollo)[https://github.com/apollostack/react-apollo].
+This library was heavily inspired by and borrows code from [react-redux](https://github.com/reactjs/react-redux/) and [react-apollo](https://github.com/apollostack/react-apollo).
 
 ## Usage
 
@@ -65,4 +65,4 @@ export default connect({
 
 ### socket.io
 
-Use (namespaces)[http://socket.io/docs/rooms-and-namespaces/] in socket.io to have different channels and follow the general pattern above.
+Use [namespaces](http://socket.io/docs/rooms-and-namespaces/) in socket.io to have different channels and follow the general pattern above.
