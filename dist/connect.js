@@ -84,12 +84,11 @@ function connect() {
           var props = this.props;
 
           this.connectToAllChannels(props);
-          this.bindStoreUpdates();
         }
       }, {
         key: 'componentWillReceiveProps',
         value: function componentWillReceiveProps(nextProps) {
-          // we got new props, we need to unsubscribe and re-watch all handles
+          // we got new props, we need to unsubscribe and rebuild all handles
           // with the new data
           if (!(0, _lodash4.default)(this.props, nextProps)) {
             this.haveOwnPropsChanged = true;
@@ -99,39 +98,12 @@ function connect() {
       }, {
         key: 'shouldComponentUpdate',
         value: function shouldComponentUpdate(nextProps, _nextState) {
-          return this.haveOwnPropsChanged || this.hasOwnStateChanged;
+          return this.haveOwnPropsChanged;
         }
       }, {
         key: 'componentWillUnmount',
         value: function componentWillUnmount() {
           this.disconnectAllChannels();
-
-          if (this.unsubscribeFromStore) {
-            this.unsubscribeFromStore();
-            this.unsubscribeFromStore = null;
-          }
-        }
-      }, {
-        key: 'bindStoreUpdates',
-        value: function bindStoreUpdates() {
-          var _this2 = this;
-
-          var store = this.store;
-
-
-          this.unsubscribeFromStore = store.subscribe(function () {
-            var props = _this2.props;
-
-            var newState = (0, _objectAssign2.default)({}, store.getState());
-            var oldState = (0, _objectAssign2.default)({}, _this2.previousState);
-
-            if (!(0, _lodash4.default)(oldState, newState)) {
-              _this2.previousState = newState;
-              _this2.hasOwnStateChanged = true;
-
-              _this2.connectToAllChannels(props);
-            }
-          });
         }
       }, {
         key: 'connectToAllChannels',
@@ -170,9 +142,9 @@ function connect() {
                 continue;
               }
               if (this.channelHandles[key].hasOwnProperty('leave')) {
-                this.channelHandles[key].leave(); // Phoenix
+                this.channelHandles[key].leave(); // socket.io and Phoenix
               } else if (this.channelHandles[key].hasOwnProperty('unsubscribe')) {
-                  this.channelHandles[key].unsubscribe(); // Rails
+                  this.channelHandles[key].unsubscribe(); // Rails ActionCable
                 }
             }
           }
@@ -181,19 +153,17 @@ function connect() {
         key: 'render',
         value: function render() {
           var haveOwnPropsChanged = this.haveOwnPropsChanged;
-          var hasOwnStateChanged = this.hasOwnStateChanged;
           var renderedElement = this.renderedElement;
           var props = this.props;
 
 
           this.haveOwnPropsChanged = false;
-          this.hasOwnStateChanged = false;
 
           var channelsProps = this.channelHandles;
 
           var mergedPropsAndChannels = (0, _objectAssign2.default)({}, props, channelsProps);
 
-          if (!haveOwnPropsChanged && !hasOwnStateChanged && renderedElement) {
+          if (!haveOwnPropsChanged && renderedElement) {
             return renderedElement;
           }
 

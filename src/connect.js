@@ -45,11 +45,10 @@ export default function connect(opts = {}) {
       componentWillMount() {
         const { props } = this;
         this.connectToAllChannels(props);
-        this.bindStoreUpdates();
       }
 
       componentWillReceiveProps(nextProps) {
-        // we got new props, we need to unsubscribe and re-watch all handles
+        // we got new props, we need to unsubscribe and rebuild all handles
         // with the new data
         if (!isEqual(this.props, nextProps)) {
           this.haveOwnPropsChanged = true;
@@ -58,34 +57,11 @@ export default function connect(opts = {}) {
       }
 
       shouldComponentUpdate(nextProps, _nextState) {
-        return this.haveOwnPropsChanged ||
-        this.hasOwnStateChanged;
+        return this.haveOwnPropsChanged;
       }
 
       componentWillUnmount() {
         this.disconnectAllChannels();
-
-        if (this.unsubscribeFromStore) {
-          this.unsubscribeFromStore();
-          this.unsubscribeFromStore = null;
-        }
-      }
-
-      bindStoreUpdates() {
-        const { store } = this;
-
-        this.unsubscribeFromStore = store.subscribe(() => {
-          const { props } = this;
-          const newState = assign({}, store.getState());
-          const oldState = assign({}, this.previousState);
-
-          if (!isEqual(oldState, newState)) {
-            this.previousState = newState;
-            this.hasOwnStateChanged = true;
-
-            this.connectToAllChannels(props);
-          }
-        });
       }
 
       connectToAllChannels(props) {
@@ -120,9 +96,9 @@ export default function connect(opts = {}) {
               continue;
             }
             if (this.channelHandles[key].hasOwnProperty('leave')) {
-              this.channelHandles[key].leave(); // Phoenix
+              this.channelHandles[key].leave(); // socket.io and Phoenix
             } else if (this.channelHandles[key].hasOwnProperty('unsubscribe')) {
-              this.channelHandles[key].unsubscribe(); // Rails
+              this.channelHandles[key].unsubscribe(); // Rails ActionCable
             }
           }
         }
@@ -131,13 +107,11 @@ export default function connect(opts = {}) {
       render() {
         const {
           haveOwnPropsChanged,
-          hasOwnStateChanged,
           renderedElement,
           props
         } = this;
 
         this.haveOwnPropsChanged = false;
-        this.hasOwnStateChanged = false;
 
         const channelsProps = this.channelHandles;
 
@@ -145,7 +119,6 @@ export default function connect(opts = {}) {
 
         if (
           !haveOwnPropsChanged &&
-          !hasOwnStateChanged &&
           renderedElement
          ) {
           return renderedElement;

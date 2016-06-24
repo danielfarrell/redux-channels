@@ -1,7 +1,6 @@
 /* global describe it */
 import expect from 'expect';
 import React, { createClass, Children, PropTypes, Component } from 'react';
-import ReactDOM from 'react-dom';
 import TestUtils from 'react-addons-test-utils';
 import { createStore } from 'redux';
 import { createSocket } from '../utils';
@@ -39,7 +38,7 @@ describe('React', () => {
         : prev;
     }
 
-    it('should receive the store in the context', () => {
+    it('should pass store through in the context', () => {
       const store = createStore(() => ({}));
       const socket = createSocket();
 
@@ -349,137 +348,54 @@ describe('React', () => {
       );
     });
 
-    it('should throw when trying to access the wrapped instance if withRef is not specified', () => {
-      const store = createStore(() => ({}));
-      const socket = createSocket();
-
+    it('should use the socket from the props instead of from the context if present', () => {
       class Container extends Component {
         render() {
           return <Passthrough />;
         }
       }
 
-      const decorator = connect(state => state);
+      let actualSocket;
+
+      const expectedSocket = { test: true };
+      const decorator = connect({
+        mapSocketToProps: ({ socket }) => {
+          actualSocket = socket;
+          return {};
+        }
+      });
       const Decorated = decorator(Container);
+      const store = createStore(() => {});
+      const mockSocket = { test: true };
 
-      const tree = TestUtils.renderIntoDocument(
-        <ProviderMock store={store} socket={socket}>
-          <Decorated />
-        </ProviderMock>
-      );
+      TestUtils.renderIntoDocument(<Decorated store={store} socket={mockSocket} />);
 
-      const decorated = TestUtils.findRenderedComponentWithType(tree, Decorated);
-      expect(() => decorated.getWrappedInstance()).toThrow(
-        /To access the wrapped instance, you need to specify \{ withRef: true \} as the fourth argument of the connect\(\) call\./
-      );
+      expect(actualSocket).toEqual(expectedSocket);
     });
 
-    it('should allow providing a factory function to mapStateToProps', () => {
-      let updatedCount = 0;
-      let memoizedReturnCount = 0;
-      const store = createStore(() => ({ value: 1 }));
-      const socket = createSocket();
-
-      const mapStateFactory = () => {
-        let lastProp, lastVal, lastResult;
-        return (state, props) => {
-          if (props.name === lastProp && lastVal === state.value) {
-            memoizedReturnCount++;
-            return lastResult;
-          }
-          lastProp = props.name;
-          lastVal = state.value;
-          return lastResult = { someObject: { prop: props.name, stateVal: state.value } };
-        };
-      };
-
+    it('should throw an error if the socket is not in the props or context', () => {
       class Container extends Component {
-        componentWillUpdate() {
-          updatedCount++;
-        }
         render() {
-          return <Passthrough {...this.props} />;
+          return <Passthrough />;
         }
       }
-      Container = connect({ mapStateToProps: mapStateFactory })(Container);
+      const store = createStore(() => {});
 
-      TestUtils.renderIntoDocument(
-        <ProviderMock store={store} socket={socket}>
-          <div>
-            <Container name="a" />
-            <Container name="b" />
-          </div>
-        </ProviderMock>
+      const decorator = connect(() => {});
+
+      const Decorated = decorator(
+        <Container pass="through" />
       );
 
-      store.dispatch({ type: 'test' });
-      expect(updatedCount).toBe(0);
-      expect(memoizedReturnCount).toBe(2);
-    });
-
-    it('should allow providing a factory function to mapDispatchToProps', () => {
-      let updatedCount = 0;
-      let memoizedReturnCount = 0;
-      const store = createStore(() => ({ value: 1 }));
-      const socket = createSocket();
-
-      const mapDispatchFactory = () => {
-        let lastProp, lastResult;
-        return (dispatch, props) => {
-          if (props.name === lastProp) {
-            memoizedReturnCount++;
-            return lastResult;
-          }
-          lastProp = props.name;
-          return lastResult = { someObject: { dispatchFn: dispatch } };
-        };
-      };
-      function mergeParentDispatch(stateProps, dispatchProps, parentProps) {
-        return { ...stateProps, ...dispatchProps, name: parentProps.name };
-      }
-
-      class Passthrough extends Component {
-        componentWillUpdate() {
-          updatedCount++;
-        }
-        render() {
-          return <div {...this.props} />;
-        }
-      }
-      Passthrough = connect({
-        mapDispatchToProps: null,
-        mapDispatchToProps: mapDispatchFactory,
-        mergeProps: mergeParentDispatch
-      })(Passthrough);
-
-      class Container extends Component {
-        constructor(props) {
-          super(props);
-          this.state = { count: 0 };
-        }
-        componentDidMount() {
-          this.setState({ count: 1 });
-        }
-        render() {
-          const { count } = this.state;
-          return (
-            <div>
-              <Passthrough count={count} name="a" />
-              <Passthrough count={count} name="b" />
-            </div>
-          );
-        }
-      }
-
-      TestUtils.renderIntoDocument(
-        <ProviderMock store={store} socket={socket}>
-          <Container />
-        </ProviderMock>
+      expect(() => {
+        TestUtils.renderIntoDocument(
+          <ProviderMock store={store}>
+            <Decorated />
+          </ProviderMock>
+        );
+      }).toThrow(
+        /Could not find "socket"/
       );
-
-      store.dispatch({ type: 'test' });
-      expect(updatedCount).toBe(0);
-      expect(memoizedReturnCount).toBe(2);
     });
 
     it('should not call update if mergeProps return value has not changed', () => {
