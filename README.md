@@ -4,6 +4,10 @@ A provider and connect for getting websocket channels(ie, Socket.io/Phoenix/Acti
 
 This library was heavily inspired by and borrows code from [react-redux](https://github.com/reactjs/react-redux/) and [react-apollo](https://github.com/apollostack/react-apollo).
 
+## Install
+
+`npm install --save redux-channels`
+
 ## Usage
 
 ### Phoenix channels
