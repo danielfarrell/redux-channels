@@ -8,6 +8,10 @@ This library was heavily inspired by and borrows code from [react-redux](https:/
 
 `npm install --save redux-channels`
 
+## Demo
+
+There is a demo app over at [presentation_app](https://github.com/danielfarrell/presentation_app).
+
 ## Usage
 
 ### Phoenix channels
